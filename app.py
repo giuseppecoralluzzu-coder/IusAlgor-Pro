@@ -17,7 +17,8 @@ def load_css(file_name):
 
 load_css("style.css")
 
-# --- 2. INTRO "SIGLA" (SOLO AL PRIMO AVVIO) ---
+# --- 2. INTRO "SIGLA" (EFFETTO CINEMATOGRAFICO) ---
+# Mostriamo il video solo se è la prima volta che l'utente entra nella sessione
 if "intro_done" not in st.session_state:
     placeholder = st.empty()
     
@@ -27,10 +28,10 @@ if "intro_done" not in st.session_state:
             video_bytes = f.read()
             video_base64 = base64.b64encode(video_bytes).decode()
         
-        # HTML per video a tutto schermo, senza controlli e non cliccabile
+        # HTML per video pulito: niente barre, niente controlli, riempie lo spazio
         video_html = f'''
-            <div style="display: flex; justify-content: center; align-items: center; height: 80vh; background-color: #0e1117;">
-                <video width="80%" height="auto" autoplay muted playsinline style="pointer-events: none; border-radius: 20px;">
+            <div style="display: flex; justify-content: center; align-items: center; height: 85vh; background-color: #0e1117;">
+                <video width="90%" height="auto" autoplay muted playsinline style="pointer-events: none; border-radius: 15px; box-shadow: 0px 0px 30px rgba(0,0,0,0.5);">
                     <source src="data:video/mp4;base64,{video_base64}" type="video/mp4">
                 </video>
             </div>
@@ -38,30 +39,29 @@ if "intro_done" not in st.session_state:
         
         with placeholder.container():
             st.markdown(video_html, unsafe_allow_html=True)
-            # Regola i secondi qui sotto in base alla durata del tuo video
-            time.sleep(6) 
+            # --- TIMER SINCRONIZZATO ---
+            # Impostato a 11 secondi per coprire tutta la durata del tuo video
+            time.sleep(11) 
             
         placeholder.empty()
         st.session_state.intro_done = True
 
 # --- 3. GESTIONE API KEY (SEGRETI) ---
-# Cerca la chiave nei Secrets di Streamlit (per la versione online)
+# Streamlit pesca la chiave dai Secrets impostati online
 if "GEMINI_API_KEY" in st.secrets:
     api_key = st.secrets["GEMINI_API_KEY"]
 else:
-    # Se non la trova (test locale), la chiede nella sidebar
     api_key = None
 
-# --- 4. SIDEBAR (CONSOLE DI CONTROLLO) ---
+# --- 4. SIDEBAR (STRUMENTI) ---
 with st.sidebar:
-    # Logo Grande e Nitido
     if os.path.exists("logo.png"):
         image = Image.open('logo.png')
         st.image(image, width=250)
     
     st.header("Console di Controllo")
     
-    # Se la chiave non è nei secrets, mostra il campo di input
+    # Se la chiave non è nei secrets (test locale), appare il box
     if not api_key:
         api_key = st.text_input("Inserisci Gemini API Key", type="password")
     
@@ -74,9 +74,9 @@ with st.sidebar:
         options=["Riassuntiva", "Completa"],
         value="Completa"
     )
-    st.info("Configurazione: GDPR / AI Act Compliance")
+    st.info("Algoritmo di Audit aggiornato all'AI Act.")
 
-# --- 5. LOGICA PRINCIPALE ---
+# --- 5. INTERFACCIA CHAT ---
 st.title("⚖️ IusAlgor Pro")
 st.markdown("##### *Audit di Conformità Legale per Sistemi di Intelligenza Artificiale*")
 
@@ -86,13 +86,13 @@ if api_key:
     if "messages" not in st.session_state:
         st.session_state.messages = []
 
-    # Visualizzazione Chat
+    # Mostra i messaggi precedenti
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
 
-    # Input Utente
-    if prompt := st.chat_input("Digita qui la tua richiesta legale..."):
+    # Gestione nuovo input
+    if prompt := st.chat_input("Chiedi un'analisi legale..."):
         with st.chat_message("user"):
             st.markdown(prompt)
         st.session_state.messages.append({"role": "user", "content": prompt})
@@ -104,22 +104,21 @@ if api_key:
                     tmp.write(uploaded_file.read())
                     tmp_path = tmp.name
                 
-                with st.spinner('Analisi dei protocolli in corso...'):
+                with st.spinner('Elaborazione dati tecnici in corso...'):
                     g_file = genai.upload_file(tmp_path)
                     
-                    is_first_msg = len(st.session_state.messages) <= 1
-                    
-                    if is_first_msg:
+                    # Istruzioni diverse se è il primo messaggio o un approfondimento
+                    if len(st.session_state.messages) <= 1:
                         if livello_dettaglio == "Completa":
-                            sys_instr = "Sei IusAlgor Pro. Analizza il file e rispondi con icone: 🎯 AMBITI, ⚠️ RISCHI, 💡 AZIONI CORRETTIVE, ❓ Q&A."
+                            sys_instr = "Sei IusAlgor Pro. Analizza il file e rispondi con: 🎯 AMBITI, ⚠️ RISCHI, 💡 AZIONI CORRETTIVE, ❓ Q&A."
                         else:
-                            sys_instr = "Sei IusAlgor Pro. Dai un verdetto legale sintetico (max 5 righe)."
+                            sys_instr = "Sei IusAlgor Pro. Dai un verdetto rapido e sintetico."
                     else:
-                        sys_instr = "Sei IusAlgor Pro. Rispondi in modo colloquiale come un avvocato umano."
+                        sys_instr = "Sei IusAlgor Pro. Rispondi come un consulente esperto e colloquiale."
 
                     model = genai.GenerativeModel(model_name='gemini-2.5-flash', system_instruction=sys_instr)
                     
-                    # Memoria storica
+                    # Ricostruisce la cronologia della chat
                     history = []
                     for m in st.session_state.messages[:-1]:
                         role = "user" if m["role"]=="user" else "model"
@@ -133,6 +132,6 @@ if api_key:
                 
                 os.remove(tmp_path)
             else:
-                st.warning("⚠️ Per iniziare, carica un documento tecnico nella barra laterale.")
+                st.warning("⚠️ Carica prima un documento tecnico dalla barra laterale per avviare l'Audit.")
 else:
-    st.error("⚠️ API Key non configurata. Inseriscila nei Secrets di Streamlit o nella sidebar.")
+    st.error("⚠️ Chiave API non rilevata. Controlla i Secrets di Streamlit.")
