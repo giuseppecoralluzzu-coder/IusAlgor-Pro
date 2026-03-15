@@ -17,8 +17,7 @@ def load_css(file_name):
 
 load_css("style.css")
 
-# --- 2. INTRO "SIGLA" (EFFETTO CINEMATOGRAFICO) ---
-# Mostriamo il video solo se è la prima volta che l'utente entra nella sessione
+# --- 2. INTRO "SIGLA" (11 SECONDI) ---
 if "intro_done" not in st.session_state:
     placeholder = st.empty()
     
@@ -28,10 +27,9 @@ if "intro_done" not in st.session_state:
             video_bytes = f.read()
             video_base64 = base64.b64encode(video_bytes).decode()
         
-        # HTML per video pulito: niente barre, niente controlli, riempie lo spazio
         video_html = f'''
             <div style="display: flex; justify-content: center; align-items: center; height: 85vh; background-color: #0e1117;">
-                <video width="90%" height="auto" autoplay muted playsinline style="pointer-events: none; border-radius: 15px; box-shadow: 0px 0px 30px rgba(0,0,0,0.5);">
+                <video width="90%" height="auto" autoplay muted playsinline style="pointer-events: none; border-radius: 15px;">
                     <source src="data:video/mp4;base64,{video_base64}" type="video/mp4">
                 </video>
             </div>
@@ -39,21 +37,18 @@ if "intro_done" not in st.session_state:
         
         with placeholder.container():
             st.markdown(video_html, unsafe_allow_html=True)
-            # --- TIMER SINCRONIZZATO ---
-            # Impostato a 11 secondi per coprire tutta la durata del tuo video
             time.sleep(11) 
             
         placeholder.empty()
         st.session_state.intro_done = True
 
-# --- 3. GESTIONE API KEY (SEGRETI) ---
-# Streamlit pesca la chiave dai Secrets impostati online
+# --- 3. GESTIONE API KEY ---
 if "GEMINI_API_KEY" in st.secrets:
     api_key = st.secrets["GEMINI_API_KEY"]
 else:
     api_key = None
 
-# --- 4. SIDEBAR (STRUMENTI) ---
+# --- 4. SIDEBAR (CON INTERRUTTORE) ---
 with st.sidebar:
     if os.path.exists("logo.png"):
         image = Image.open('logo.png')
@@ -61,7 +56,6 @@ with st.sidebar:
     
     st.header("Console di Controllo")
     
-    # Se la chiave non è nei secrets (test locale), appare il box
     if not api_key:
         api_key = st.text_input("Inserisci Gemini API Key", type="password")
     
@@ -69,11 +63,19 @@ with st.sidebar:
     uploaded_file = st.file_uploader("📂 Carica Documentazione Tecnica", type=['pdf', 'txt'])
     
     st.markdown("---")
-    livello_dettaglio = st.select_slider(
-        "Dettaglio Analisi:",
-        options=["Riassuntiva", "Completa"],
-        value="Completa"
-    )
+    
+    # --- NUOVO INTERRUTTORE (TOGGLE) ---
+    # Se attivato (True) è Analisi Completa, se disattivato (False) è Riassuntiva
+    toggle_dettaglio = st.toggle("Analisi Approfondita", value=True)
+    
+    if toggle_dettaglio:
+        st.caption("🟢 Modalità: Report Legale Completo")
+        livello_dettaglio = "Completa"
+    else:
+        st.caption("🟡 Modalità: Verdetto Rapido")
+        livello_dettaglio = "Riassuntiva"
+    
+    st.markdown("---")
     st.info("Algoritmo di Audit aggiornato all'AI Act.")
 
 # --- 5. INTERFACCIA CHAT ---
@@ -86,12 +88,10 @@ if api_key:
     if "messages" not in st.session_state:
         st.session_state.messages = []
 
-    # Mostra i messaggi precedenti
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
 
-    # Gestione nuovo input
     if prompt := st.chat_input("Chiedi un'analisi legale..."):
         with st.chat_message("user"):
             st.markdown(prompt)
@@ -107,7 +107,6 @@ if api_key:
                 with st.spinner('Elaborazione dati tecnici in corso...'):
                     g_file = genai.upload_file(tmp_path)
                     
-                    # Istruzioni diverse se è il primo messaggio o un approfondimento
                     if len(st.session_state.messages) <= 1:
                         if livello_dettaglio == "Completa":
                             sys_instr = "Sei IusAlgor Pro. Analizza il file e rispondi con: 🎯 AMBITI, ⚠️ RISCHI, 💡 AZIONI CORRETTIVE, ❓ Q&A."
@@ -118,7 +117,6 @@ if api_key:
 
                     model = genai.GenerativeModel(model_name='gemini-2.5-flash', system_instruction=sys_instr)
                     
-                    # Ricostruisce la cronologia della chat
                     history = []
                     for m in st.session_state.messages[:-1]:
                         role = "user" if m["role"]=="user" else "model"
@@ -132,6 +130,6 @@ if api_key:
                 
                 os.remove(tmp_path)
             else:
-                st.warning("⚠️ Carica prima un documento tecnico dalla barra laterale per avviare l'Audit.")
+                st.warning("⚠️ Carica prima un documento tecnico dalla barra laterale.")
 else:
-    st.error("⚠️ Chiave API non rilevata. Controlla i Secrets di Streamlit.")
+    st.error("⚠️ Chiave API non rilevata.")
