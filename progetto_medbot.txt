@@ -1,0 +1,5 @@
+Documento di Architettura: MedBot AI
+Descrizione: Chatbot basato su intelligenza artificiale sviluppato per le cliniche private in Italia. I pazienti scrivono i loro sintomi in chat e l'IA fornisce una pre-diagnosi medica automatizzata.
+Dati raccolti: Nome, cognome, indirizzo email, codice fiscale, gruppo sanguigno e storico delle malattie.
+Conservazione dati: I dati vengono inviati e salvati in chiaro (senza crittografia) su server cloud economici situati negli Stati Uniti. I log delle chat vengono conservati per sempre per addestrare i modelli futuri.
+Consenso: Gli utenti accettano l'uso dei dati sanitari implicitamente, semplicemente aprendo la pagina web. Non c'è un banner esplicito da cliccare per rifiutare.

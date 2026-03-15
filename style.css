@@ -1,0 +1,22 @@
+/* Cambiamo il colore di sfondo e del testo */
+.stApp {
+    background-color: #0e1117;
+    color: #ffffff;
+}
+/* Stile per i messaggi della chat */
+.stChatMessage {
+    border-radius: 15px;
+    padding: 15px;
+    margin-bottom: 10px;
+}
+/* Personalizzazione sidebar */
+[data-testid="stSidebar"] {
+    background-color: #161b22;
+    border-right: 1px solid #30363d;
+}
+/* Titolo principale */
+h1 {
+    color: #58a6ff;
+    font-family: 'Helvetica Neue', sans-serif;
+    font-weight: 700;
+}
